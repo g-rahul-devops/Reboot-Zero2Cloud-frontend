@@ -3,13 +3,14 @@ import React, { useState } from 'react';
 import { Shield, Search, Filter } from 'lucide-react';
 import ResourceList from './ResourceList.jsx';
 import BillingInfo from './BillingInfo.jsx';
+import GcpPolicies from './GcpPolicies.jsx';
 import { mockVMs, mockClusters } from '../../data/mockData.js';
 
 const GovernanceTab = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [resourceType, setResourceType] = useState('all');
-  const [activeView, setActiveView] = useState('resources'); // 'resources' or 'billing'
+  const [activeView, setActiveView] = useState('resources'); // 'resources', 'billing', or 'policies'
 
   const filteredVMs = mockVMs.filter(vm => {
     const matchesSearch = vm.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -59,12 +60,24 @@ const GovernanceTab = () => {
               >
                 Billing
               </button>
+              <button
+                  onClick={() => setActiveView('policies')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                      activeView === 'policies'
+                          ? 'border-blue-600 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+              >
+                Policies
+              </button>
             </nav>
           </div>
         </div>
 
         {activeView === 'billing' ? (
             <BillingInfo />
+        ) : activeView === 'policies' ? (
+            <GcpPolicies />
         ) : (
             <>
               {/* Filters */}
