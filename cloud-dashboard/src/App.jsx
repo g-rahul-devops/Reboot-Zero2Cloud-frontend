@@ -1,38 +1,63 @@
-import React, { useState } from 'react';
-import Header from './components/Header.jsx';
-import Footer from './components/Footer.jsx';
-import Navigation from './components/Navigation.jsx';
-import ProvisioningTab from './components/Provisioning/ProvisioningTab.jsx';
-import GovernanceTab from './components/Governance/GovernanceTab.jsx';
-import MonitoringTab from './components/Monitoring/MonitoringTab.jsx';
-import { TabTypes } from './types/index.js';
+import { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Login from './components/Login';
+import MainPage from './MainPage';  // Add this import
 
 function App() {
-  const [activeTab, setActiveTab] = useState(TabTypes.PROVISIONING);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [user, setUser] = useState(null);
 
-  const renderActiveTab = () => {
-    switch (activeTab) {
-      case TabTypes.PROVISIONING:
-        return <ProvisioningTab />;
-      case TabTypes.GOVERNANCE:
-        return <GovernanceTab />;
-      case TabTypes.MONITORING:
-        return <MonitoringTab />;
-      default:
-        return <ProvisioningTab />;
-    }
-  };
+    const handleLogin = (username) => {
+        setIsAuthenticated(true);
+        setUser(username);
+    };
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Header />
-      <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
-      <main className="flex-1">
-        {renderActiveTab()}
-      </main>
-      <Footer />
-    </div>
-  );
+    const handleLogout = () => {
+        setIsAuthenticated(false);
+        setUser(null);
+    };
+
+    return (
+        <Router>
+            <Routes>
+                <Route
+                    path="/login"
+                    element={
+                        !isAuthenticated ? (
+                            <Login onLogin={handleLogin} />
+                        ) : (
+                            <Navigate to="/dashboard" replace />
+                        )
+                    }
+                />
+                <Route
+                    path="/dashboard"
+                    element={
+                        isAuthenticated ? (
+                            <div>
+                                <div className="p-4 absolute top-0 right-0 z-10">
+                                    <span className="mr-2">Welcome, {user}!</span>
+                                    <button
+                                        onClick={handleLogout}
+                                        className="text-blue-600 hover:text-blue-800"
+                                    >
+                                        Logout
+                                    </button>
+                                </div>
+                                <MainPage />
+                            </div>
+                        ) : (
+                            <Navigate to="/login" replace />
+                        )
+                    }
+                />
+                <Route
+                    path="/"
+                    element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />}
+                />
+            </Routes>
+        </Router>
+    );
 }
 
 export default App;
