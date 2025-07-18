@@ -4,11 +4,6 @@ export const TabTypes = {
   MONITORING: 'monitoring'
 };
 
-export const ProvisioningSubTabs = {
-  VM: 'vm',
-  CLUSTER: 'cluster'
-};
-
 export const TimeFilters = {
   ONE_HOUR: '1h',
   ONE_DAY: '1d',
@@ -28,4 +23,10 @@ export const ClusterStatuses = {
   UNHEALTHY: 'unhealthy',
   SCALING: 'scaling',
   ERROR: 'error'
+};
+
+export const ProvisioningSubTabs = {
+  TEAM: 'team',
+  VM: 'vm',
+  CLUSTER: 'cluster'
 };
