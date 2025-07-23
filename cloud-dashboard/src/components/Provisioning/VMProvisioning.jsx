@@ -1,141 +1,58 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Server, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { vmService } from '../../services/vmService';
+import { useVMForm } from '../../hooks/useVMForm';
+import { VM_CONFIG } from '../../constants/vmConstants';
 import 'react-toastify/dist/ReactToastify.css';
 
 const VMProvisioning = () => {
-  const [formData, setFormData] = useState({
-    projectId: '',
-    zone: 'us-central1-a',
-    instanceName: '',
-    machineType: 'e2-medium',
-    tags: '',
-    disks: 'pd-standard'
-  });
-
-  const [deleteFormData, setDeleteFormData] = useState({
-    projectId: '',
-    zone: 'us-central1-a',
-    instanceName: ''
-  });
-
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const zones = [
-    'us-central1-a',
-    'us-central1-b',
-    'us-central1-c',
-    'us-east1-b',
-    'us-west1-a',
-    'europe-west1-b',
-    'asia-east1-a'
-  ];
-
-  const machineTypes = [
-    'e2-micro',
-    'e2-small',
-    'e2-medium',
-    'e2-standard-2',
-    'e2-standard-4',
-    'e2-standard-8'
-  ];
-
-  const diskTypes = [
-    'pd-standard',
-    'pd-balanced',
-    'pd-ssd'
-  ];
+  const {
+    createForm,
+    deleteForm,
+    isCreating,
+    isDeleting,
+    setIsCreating,
+    setIsDeleting,
+    handleCreateChange,
+    handleDeleteChange,
+    resetCreateForm,
+    resetDeleteForm
+  } = useVMForm();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsCreating(true);
 
     try {
-      const response = await fetch('http://localhost:9000/provisioning/vm', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(errorData || 'Failed to provision VM');
-      }
-
-      const data = await response.text();
-      toast.success(data);
-
-      setFormData({
-        projectId: '',
-        zone: 'us-central1-a',
-        instanceName: '',
-        machineType: 'e2-medium',
-        tags: '',
-        disks: 'pd-standard'
-      });
+      await vmService.createVM(createForm);
+      toast.success('VM created successfully');
+      resetCreateForm();
     } catch (error) {
-      console.error('Error:', error);
-      toast.error(`Error creating VM: ${error.message}`);
+      // Error is handled by axios interceptor
     } finally {
-      setIsLoading(false);
+      setIsCreating(false);
     }
   };
 
   const handleDelete = async (e) => {
     e.preventDefault();
-    setIsDeleting(true);
-    // Validate delete form data
-    if (!deleteFormData.instanceName || !deleteFormData.zone || !deleteFormData.projectId) {
+
+    if (!deleteForm.instanceName || !deleteForm.zone || !deleteForm.projectId) {
       toast.error('All fields are required for VM deletion');
-      setIsDeleting(false);
       return;
     }
 
+    setIsDeleting(true);
     try {
-      const response = await fetch(
-          `http://localhost:9000/provisioning/vm/${encodeURIComponent(deleteFormData.zone)}/${encodeURIComponent(deleteFormData.instanceName)}?projectId=${encodeURIComponent(deleteFormData.projectId)}`,
-          {
-            method: 'DELETE',
-            headers: {
-              'Content-Type': 'application/json',
-            }
-          }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(errorData || 'Failed to delete VM');
-      }
-
+      await vmService.deleteVM(deleteForm);
       toast.success('VM deletion initiated successfully');
-      setDeleteFormData({
-        projectId: '',
-        zone: 'us-central1-a',
-        instanceName: ''
-      });
+      resetDeleteForm();
     } catch (error) {
-      console.error('Error:', error);
-      toast.error(`Error deleting VM: ${error.message}`);
+      // Error is handled by axios interceptor
     } finally {
       setIsDeleting(false);
     }
-  };
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleDeleteFormChange = (e) => {
-    setDeleteFormData({
-      ...deleteFormData,
-      [e.target.name]: e.target.value
-    });
   };
 
   return (
@@ -157,8 +74,8 @@ const VMProvisioning = () => {
                     type="text"
                     id="projectId"
                     name="projectId"
-                    value={formData.projectId}
-                    onChange={handleChange}
+                    value={createForm.projectId}
+                    onChange={handleCreateChange}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="e.g., my-project-id"
@@ -173,8 +90,8 @@ const VMProvisioning = () => {
                     type="text"
                     id="instanceName"
                     name="instanceName"
-                    value={formData.instanceName}
-                    onChange={handleChange}
+                    value={createForm.instanceName}
+                    onChange={handleCreateChange}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="e.g., my-vm-instance"
@@ -188,12 +105,12 @@ const VMProvisioning = () => {
                 <select
                     id="zone"
                     name="zone"
-                    value={formData.zone}
-                    onChange={handleChange}
+                    value={createForm.zone}
+                    onChange={handleCreateChange}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  {zones.map((zone) => (
+                  {VM_CONFIG.zones.map((zone) => (
                       <option key={zone} value={zone}>{zone}</option>
                   ))}
                 </select>
@@ -206,12 +123,12 @@ const VMProvisioning = () => {
                 <select
                     id="machineType"
                     name="machineType"
-                    value={formData.machineType}
-                    onChange={handleChange}
+                    value={createForm.machineType}
+                    onChange={handleCreateChange}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  {machineTypes.map((type) => (
+                  {VM_CONFIG.machineTypes.map((type) => (
                       <option key={type} value={type}>{type}</option>
                   ))}
                 </select>
@@ -225,8 +142,8 @@ const VMProvisioning = () => {
                     type="text"
                     id="tags"
                     name="tags"
-                    value={formData.tags}
-                    onChange={handleChange}
+                    value={createForm.tags}
+                    onChange={handleCreateChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="e.g., web-server,production"
                 />
@@ -240,12 +157,12 @@ const VMProvisioning = () => {
                 <select
                     id="disks"
                     name="disks"
-                    value={formData.disks}
-                    onChange={handleChange}
+                    value={createForm.disks}
+                    onChange={handleCreateChange}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  {diskTypes.map((type) => (
+                  {VM_CONFIG.diskTypes.map((type) => (
                       <option key={type} value={type}>{type}</option>
                   ))}
                 </select>
@@ -255,25 +172,18 @@ const VMProvisioning = () => {
             <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
               <button
                   type="button"
-                  onClick={() => setFormData({
-                    projectId: '',
-                    zone: 'us-central1-a',
-                    instanceName: '',
-                    machineType: 'e2-medium',
-                    tags: '',
-                    disks: 'pd-standard'
-                  })}
+                  onClick={resetCreateForm}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-200"
               >
                 Reset
               </button>
               <button
                   type="submit"
-                  disabled={isLoading}
-                  className={`px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 flex items-center space-x-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={isCreating}
+                  className={`px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 flex items-center space-x-2 ${isCreating ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <Plus className="h-4 w-4" />
-                <span>{isLoading ? 'Creating...' : 'Create VM'}</span>
+                <span>{isCreating ? 'Creating...' : 'Create VM'}</span>
               </button>
             </div>
           </form>
@@ -296,8 +206,8 @@ const VMProvisioning = () => {
                     type="text"
                     id="deleteProjectId"
                     name="projectId"
-                    value={deleteFormData.projectId}
-                    onChange={handleDeleteFormChange}
+                    value={deleteForm.projectId}
+                    onChange={handleDeleteChange}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                     placeholder="e.g., my-project-id"
@@ -312,8 +222,8 @@ const VMProvisioning = () => {
                     type="text"
                     id="deleteInstanceName"
                     name="instanceName"
-                    value={deleteFormData.instanceName}
-                    onChange={handleDeleteFormChange}
+                    value={deleteForm.instanceName}
+                    onChange={handleDeleteChange}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                     placeholder="e.g., my-vm-instance"
@@ -327,12 +237,12 @@ const VMProvisioning = () => {
                 <select
                     id="deleteZone"
                     name="zone"
-                    value={deleteFormData.zone}
-                    onChange={handleDeleteFormChange}
+                    value={deleteForm.zone}
+                    onChange={handleDeleteChange}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                 >
-                  {zones.map((zone) => (
+                  {VM_CONFIG.zones.map((zone) => (
                       <option key={zone} value={zone}>{zone}</option>
                   ))}
                 </select>
