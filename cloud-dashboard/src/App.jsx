@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import Login from './components/Login';
-import MainPage from './MainPage';  // Add this import
+import MainPage from './MainPage';
 
 function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -19,6 +21,18 @@ function App() {
 
     return (
         <Router>
+            <ToastContainer
+                position="top-right"
+                autoClose={3000}
+                hideProgressBar={false}
+                newestOnTop={true}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="light"
+            />
             <Routes>
                 <Route
                     path="/login"
