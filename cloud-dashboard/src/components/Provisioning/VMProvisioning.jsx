@@ -5,43 +5,78 @@ import 'react-toastify/dist/ReactToastify.css';
 
 const VMProvisioning = () => {
   const [formData, setFormData] = useState({
-    name: '',
-    os: 'ubuntu-22.04',
-    size: 't3.medium',
-    region: 'us-east-1',
-    storage: '20'
+    projectId: '',
+    zone: 'us-central1-a',
+    instanceName: '',
+    machineType: 'e2-medium',
+    tags: '',
+    disks: 'pd-standard'
   });
 
-  const [deleteFormData, setDeleteFormData] = useState({
-    vmInstance: '',
-    projectId: ''
-  });
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Provisioning VM:', formData);
-    toast.success('VM provisioning request submitted successfully!');
-    setFormData({
-      name: '',
-      os: 'ubuntu-22.04',
-      size: 't3.medium',
-      region: 'us-east-1',
-      storage: '20'
-    });
-  };
+  const zones = [
+    'us-central1-a',
+    'us-central1-b',
+    'us-central1-c',
+    'us-east1-b',
+    'us-west1-a',
+    'europe-west1-b',
+    'asia-east1-a'
+  ];
 
-  const handleDeleteSubmit = (e) => {
+  const machineTypes = [
+    'e2-micro',
+    'e2-small',
+    'e2-medium',
+    'e2-standard-2',
+    'e2-standard-4',
+    'e2-standard-8'
+  ];
+
+  const diskTypes = [
+    'pd-standard',
+    'pd-balanced',
+    'pd-ssd'
+  ];
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!deleteFormData.vmInstance.trim() || !deleteFormData.projectId.trim()) {
-      toast.error('Please fill in all required fields');
-      return;
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:9000/provisioning/vm', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(errorData || 'Failed to provision VM');
+      }
+
+
+      const data = await response.text();
+      toast.success(data);
+
+      // Reset form
+      setFormData({
+        projectId: '',
+        zone: 'us-central1-a',
+        instanceName: '',
+        machineType: 'e2-medium',
+        tags: '',
+        disks: 'pd-standard'
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error(`Error creating VM: ${error.message}`);
+    } finally {
+      setIsLoading(false);
     }
-    console.log('Deleting VM:', deleteFormData);
-    toast.success('VM deletion request submitted successfully!');
-    setDeleteFormData({
-      vmInstance: '',
-      projectId: ''
-    });
   };
 
   const handleChange = (e) => {
@@ -51,203 +86,143 @@ const VMProvisioning = () => {
     });
   };
 
-  const handleDeleteChange = (e) => {
-    setDeleteFormData({
-      ...deleteFormData,
-      [e.target.name]: e.target.value
-    });
-  };
-
   return (
-      <div className="space-y-8">
-        {/* Create VM Section */}
-        <div className="p-6 bg-white rounded-lg shadow">
-          <div className="flex items-center space-x-3 mb-6">
-            <Server className="h-6 w-6 text-blue-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Create Virtual Machine</h3>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                  VM Name
-                </label>
-                <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="e.g., web-server-01"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="os" className="block text-sm font-medium text-gray-700 mb-2">
-                  Operating System
-                </label>
-                <select
-                    id="os"
-                    name="os"
-                    value={formData.os}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="ubuntu-22.04">Ubuntu 22.04 LTS</option>
-                  <option value="ubuntu-20.04">Ubuntu 20.04 LTS</option>
-                  <option value="centos-8">CentOS 8</option>
-                  <option value="rhel-8">Red Hat Enterprise Linux 8</option>
-                  <option value="windows-2022">Windows Server 2022</option>
-                  <option value="windows-2019">Windows Server 2019</option>
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="size" className="block text-sm font-medium text-gray-700 mb-2">
-                  Instance Size
-                </label>
-                <select
-                    id="size"
-                    name="size"
-                    value={formData.size}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="t3.micro">t3.micro (1 vCPU, 1 GB RAM)</option>
-                  <option value="t3.small">t3.small (1 vCPU, 2 GB RAM)</option>
-                  <option value="t3.medium">t3.medium (2 vCPU, 4 GB RAM)</option>
-                  <option value="t3.large">t3.large (2 vCPU, 8 GB RAM)</option>
-                  <option value="t3.xlarge">t3.xlarge (4 vCPU, 16 GB RAM)</option>
-                  <option value="m5.large">m5.large (2 vCPU, 8 GB RAM)</option>
-                  <option value="m5.xlarge">m5.xlarge (4 vCPU, 16 GB RAM)</option>
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="region" className="block text-sm font-medium text-gray-700 mb-2">
-                  Region
-                </label>
-                <select
-                    id="region"
-                    name="region"
-                    value={formData.region}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="us-east-1">US East (N. Virginia)</option>
-                  <option value="us-west-2">US West (Oregon)</option>
-                  <option value="eu-west-1">Europe (Ireland)</option>
-                  <option value="eu-central-1">Europe (Frankfurt)</option>
-                  <option value="ap-southeast-1">Asia Pacific (Singapore)</option>
-                  <option value="ap-northeast-1">Asia Pacific (Tokyo)</option>
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label htmlFor="storage" className="block text-sm font-medium text-gray-700 mb-2">
-                  Storage (GB)
-                </label>
-                <input
-                    type="number"
-                    id="storage"
-                    name="storage"
-                    value={formData.storage}
-                    onChange={handleChange}
-                    min="10"
-                    max="1000"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
-              <button
-                  type="button"
-                  onClick={() => setFormData({
-                    name: '',
-                    os: 'ubuntu-22.04',
-                    size: 't3.medium',
-                    region: 'us-east-1',
-                    storage: '20'
-                  })}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-200"
-              >
-                Cancel
-              </button>
-              <button
-                  type="submit"
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 flex items-center space-x-2"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Create VM</span>
-              </button>
-            </div>
-          </form>
+      <div className="p-6 bg-white rounded-lg shadow">
+        <div className="flex items-center space-x-3 mb-6">
+          <Server className="h-6 w-6 text-blue-600" />
+          <h3 className="text-lg font-semibold text-gray-900">Create Virtual Machine</h3>
         </div>
 
-        {/* Delete VM Section */}
-        <div className="p-6 bg-white rounded-lg shadow">
-          <div className="flex items-center space-x-3 mb-6">
-            <Server className="h-6 w-6 text-red-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Delete Virtual Machine</h3>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label htmlFor="projectId" className="block text-sm font-medium text-gray-700 mb-2">
+                Project ID *
+              </label>
+              <input
+                  type="text"
+                  id="projectId"
+                  name="projectId"
+                  value={formData.projectId}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., my-project-id"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="instanceName" className="block text-sm font-medium text-gray-700 mb-2">
+                Instance Name *
+              </label>
+              <input
+                  type="text"
+                  id="instanceName"
+                  name="instanceName"
+                  value={formData.instanceName}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., my-vm-instance"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="zone" className="block text-sm font-medium text-gray-700 mb-2">
+                Zone *
+              </label>
+              <select
+                  id="zone"
+                  name="zone"
+                  value={formData.zone}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                {zones.map((zone) => (
+                    <option key={zone} value={zone}>{zone}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="machineType" className="block text-sm font-medium text-gray-700 mb-2">
+                Machine Type *
+              </label>
+              <select
+                  id="machineType"
+                  name="machineType"
+                  value={formData.machineType}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                {machineTypes.map((type) => (
+                    <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-2">
+                Tags
+              </label>
+              <input
+                  type="text"
+                  id="tags"
+                  name="tags"
+                  value={formData.tags}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g., web-server"
+              />
+              <p className="mt-1 text-sm text-gray-500">Separate multiple tags with commas</p>
+            </div>
+
+            <div>
+              <label htmlFor="disks" className="block text-sm font-medium text-gray-700 mb-2">
+                Disk Type *
+              </label>
+              <select
+                  id="disks"
+                  name="disks"
+                  value={formData.disks}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                {diskTypes.map((type) => (
+                    <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          <form onSubmit={handleDeleteSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="vmInstance" className="block text-sm font-medium text-gray-700 mb-2">
-                  VM Instance
-                </label>
-                <input
-                    type="text"
-                    id="vmInstance"
-                    name="vmInstance"
-                    value={deleteFormData.vmInstance}
-                    onChange={handleDeleteChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                    placeholder="e.g., i-1234567890abcdef0"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="projectId" className="block text-sm font-medium text-gray-700 mb-2">
-                  Project ID
-                </label>
-                <input
-                    type="text"
-                    id="projectId"
-                    name="projectId"
-                    value={deleteFormData.projectId}
-                    onChange={handleDeleteChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                    placeholder="Enter project ID"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
-              <button
-                  type="button"
-                  onClick={() => setDeleteFormData({ vmInstance: '', projectId: '' })}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-200"
-              >
-                Cancel
-              </button>
-              <button
-                  type="submit"
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors duration-200 flex items-center space-x-2"
-              >
-                <Trash2 className="h-4 w-4" />
-                <span>Delete VM</span>
-              </button>
-            </div>
-          </form>
-        </div>
+          <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+            <button
+                type="button"
+                onClick={() => setFormData({
+                  projectId: '',
+                  zone: 'us-central1-a',
+                  instanceName: '',
+                  machineType: 'e2-medium',
+                  tags: '',
+                  disks: 'pd-standard'
+                })}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-200"
+            >
+              Reset
+            </button>
+            <button
+                type="submit"
+                disabled={isLoading}
+                className={`px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 flex items-center space-x-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <Plus className="h-4 w-4" />
+              <span>{isLoading ? 'Creating...' : 'Create VM'}</span>
+            </button>
+          </div>
+        </form>
       </div>
   );
 };
