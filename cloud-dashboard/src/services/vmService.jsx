@@ -12,5 +12,11 @@ export const vmService = {
             { params: { projectId: encodeURIComponent(projectId) } }
         );
         return response.data;
+    },
+
+    getAllVMs: async () => {
+        const response = await apiClient.get('/api/gcp/all-vms');
+        return response.data;
     }
+
 };
