@@ -1,9 +1,12 @@
-import React from 'react';
-import { Shield, Users, Lock, Settings } from 'lucide-react';
+
+import React, { useState, useEffect } from 'react';
+import { Shield, Users, Lock, Settings, Loader } from 'lucide-react';
+import { policyService } from '../../services/policyService';
+import { toast } from 'react-toastify';
 
 const GcpPolicies = () => {
-    // This would come from your actual GCP API
-    const mockPolicies = {
+    const [isLoading, setIsLoading] = useState(true);
+    const [policies, setPolicies] = useState({
         orgPolicies: [
             {
                 name: 'Disable Serial Port Access',
@@ -24,27 +27,37 @@ const GcpPolicies = () => {
                 lastUpdated: '2025-07-13'
             }
         ],
-        accessPolicies: [
-            {
-                role: 'Organization Admin',
-                members: ['group:org-admins@company.com'],
-                scope: 'Organization',
-                description: 'Full administrative access to all GCP resources'
-            },
-            {
-                role: 'Project Owner',
-                members: ['user:project-lead@company.com', 'group:project-owners@company.com'],
-                scope: 'Project',
-                description: 'Full access to all project resources'
-            },
-            {
-                role: 'Security Admin',
-                members: ['group:security-team@company.com'],
-                scope: 'Organization',
-                description: 'Manage security policies and settings'
-            }
-        ]
+        accessPolicies: []
+    });
+
+    useEffect(() => {
+        fetchPolicies();
+    }, []);
+
+    const fetchPolicies = async () => {
+        try {
+            setIsLoading(true);
+            const accessPolicies = await policyService.getAccessPolicies();
+            setPolicies(prev => ({
+                ...prev,
+                accessPolicies
+            }));
+        } catch (error) {
+            console.error('Error fetching policies:', error);
+            toast.error('Failed to fetch access policies');
+        } finally {
+            setIsLoading(false);
+        }
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center p-8">
+                <Loader className="h-8 w-8 text-blue-600 animate-spin" />
+                <span className="ml-2 text-gray-600">Loading policies...</span>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -67,7 +80,7 @@ const GcpPolicies = () => {
                         </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                        {mockPolicies.orgPolicies.map((policy, index) => (
+                        {policies.orgPolicies.map((policy, index) => (
                             <tr key={index} className="hover:bg-gray-50">
                                 <td className="px-6 py-4 text-sm text-gray-900">{policy.name}</td>
                                 <td className="px-6 py-4">
@@ -103,12 +116,12 @@ const GcpPolicies = () => {
                         </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                        {mockPolicies.accessPolicies.map((policy, index) => (
+                        {policies.accessPolicies.map((policy, index) => (
                             <tr key={index} className="hover:bg-gray-50">
                                 <td className="px-6 py-4 text-sm font-medium text-gray-900">{policy.role}</td>
                                 <td className="px-6 py-4 text-sm text-gray-500">
                                     {policy.members.map((member, i) => (
-                                        <div key={i} className="flex items-center space-x-1">
+                                        <div key={i} className="flex items-center space-x-1 mb-1">
                                             <Users className="h-4 w-4 text-gray-400" />
                                             <span>{member}</span>
                                         </div>
