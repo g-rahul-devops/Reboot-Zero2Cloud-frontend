@@ -2,8 +2,8 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 
 const apiClient = axios.create({
-    baseURL: 'https://zerotocloud-app-91058824520.us-central1.run.app',
-    //baseURL: 'http://localhost:9000',
+    //baseURL: 'https://zerotocloud-app-91058824520.us-central1.run.app',
+    baseURL: 'http://localhost:9000',
     headers: {
         'Content-Type': 'application/json',
     },
