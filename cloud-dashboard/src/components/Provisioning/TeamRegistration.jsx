@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { Users } from 'lucide-react';
+import { toast } from 'react-toastify';
 import TeamRegistrationModal from './TeamRegistrationModal';
+import { registerTeam } from '../../services/teamService';
 
 const TeamRegistrationForm = () => {
     const [formData, setFormData] = useState({
         teamName: '',
         tag: ''
     });
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -18,28 +19,50 @@ const TeamRegistrationForm = () => {
         }));
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        setError('');
-        setSuccess('');
-
-        if (!formData.teamName.trim() || !formData.tag.trim()) {
-            setError('Both team name and tag are required');
-            return;
+    const validateForm = () => {
+        if (!formData.teamName.trim()) {
+            toast.error('Team name is required');
+            return false;
         }
 
-        const tagRegex = /^[A-Z0-9-]{2,10}$/;
+        if (!formData.tag.trim()) {
+            toast.error('Team tag is required');
+            return false;
+        }
+
+        const tagRegex = /^[A-Za-z0-9-]{2,10}$/;
         if (!tagRegex.test(formData.tag)) {
-            setError('Tag must be 2-10 characters long and contain only uppercase letters, numbers, and hyphens');
-            return;
+            toast.error('Tag must be 2-10 characters long and contain only uppercase letters, numbers, and hyphens');
+            return false;
         }
 
-        console.log('Team registration:', formData);
-        setSuccess('Team registered successfully!');
+        return true;
+    };
+
+    const resetForm = () => {
         setFormData({
             teamName: '',
             tag: ''
         });
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        if (!validateForm()) {
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            await registerTeam('red-welder-466202-u6', formData.tag.toLowerCase());
+            toast.success('Team registered successfully!');
+            resetForm();
+        } catch (error) {
+            console.error('Team registration failed:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -54,7 +77,8 @@ const TeamRegistrationForm = () => {
                     name="teamName"
                     value={formData.teamName}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    disabled={isLoading}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="Enter team name"
                 />
             </div>
@@ -69,7 +93,8 @@ const TeamRegistrationForm = () => {
                     name="tag"
                     value={formData.tag}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    disabled={isLoading}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="Enter team tag (e.g., TEAM-1)"
                 />
                 <p className="mt-1 text-sm text-gray-500">
@@ -77,23 +102,26 @@ const TeamRegistrationForm = () => {
                 </p>
             </div>
 
-            {error && (
-                <div className="text-red-500 text-sm">
-                    {error}
-                </div>
-            )}
-
-            {success && (
-                <div className="text-green-500 text-sm">
-                    {success}
-                </div>
-            )}
-
             <button
                 type="submit"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                disabled={isLoading}
+                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white transition-colors duration-200 ${
+                    isLoading
+                        ? 'bg-blue-400 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-700'
+                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
             >
-                Register Team
+                {isLoading ? (
+                    <span className="flex items-center">
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Registering...
+                    </span>
+                ) : (
+                    'Register Team'
+                )}
             </button>
         </form>
     );
