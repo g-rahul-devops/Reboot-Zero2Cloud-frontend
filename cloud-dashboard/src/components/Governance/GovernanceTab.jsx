@@ -1,28 +1,53 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Shield, Search, Filter } from 'lucide-react';
 import ResourceList from './ResourceList.jsx';
 import BillingInfo from './BillingInfo.jsx';
 import GcpPolicies from './GcpPolicies.jsx';
-import { mockVMs, mockClusters } from '../../data/mockData.js';
+import { vmService } from '../../services/vmService';
+import { toast } from 'react-toastify';
 
 const GovernanceTab = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [resourceType, setResourceType] = useState('all');
-  const [activeView, setActiveView] = useState('resources'); // 'resources', 'billing', or 'policies'
+  const [activeView, setActiveView] = useState('resources');
+  const [vms, setVMs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredVMs = mockVMs.filter(vm => {
+  useEffect(() => {
+    fetchVMs();
+  }, []);
+
+  const fetchVMs = async () => {
+    try {
+      setIsLoading(true);
+      const vmData = await vmService.getAllVMs();
+      // Transform VM data to match the ResourceList component's expected format
+      const transformedVMs = vmData.map(vm => ({
+        id: vm.name, // Using name as ID since we don't have a separate ID
+        name: vm.name,
+        status: vm.status.toLowerCase(),
+        os: vm.os,
+        size: vm.machineType,
+        region: vm.zone,
+        cpuUsage: '0', // Add default values if not provided by API
+        memoryUsage: vm.memoryUsage || '0',
+        createdAt: vm.createdTime
+      }));
+      setVMs(transformedVMs);
+    } catch (error) {
+      console.error('Error fetching VMs:', error);
+      toast.error('Failed to fetch VM data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredVMs = vms.filter(vm => {
     const matchesSearch = vm.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         vm.region.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || vm.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  const filteredClusters = mockClusters.filter(cluster => {
-    const matchesSearch = cluster.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        cluster.region.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || cluster.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' || vm.status === statusFilter.toLowerCase();
     return matchesSearch && matchesStatus;
   });
 
@@ -112,7 +137,6 @@ const GovernanceTab = () => {
                     >
                       <option value="all">All Resources</option>
                       <option value="vms">Virtual Machines</option>
-                      <option value="clusters">Clusters</option>
                     </select>
                   </div>
 
@@ -129,13 +153,9 @@ const GovernanceTab = () => {
                           className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       >
                         <option value="all">All Statuses</option>
-                        <option value="running">Running</option>
-                        <option value="stopped">Stopped</option>
-                        <option value="pending">Pending</option>
-                        <option value="healthy">Healthy</option>
-                        <option value="unhealthy">Unhealthy</option>
-                        <option value="scaling">Scaling</option>
-                        <option value="error">Error</option>
+                        <option value="RUNNING">Running</option>
+                        <option value="STOPPED">Stopped</option>
+                        <option value="PENDING">Pending</option>
                       </select>
                     </div>
                   </div>
@@ -149,14 +169,7 @@ const GovernanceTab = () => {
                         title="Virtual Machines"
                         type="vm"
                         resources={filteredVMs}
-                    />
-                )}
-
-                {(resourceType === 'all' || resourceType === 'clusters') && (
-                    <ResourceList
-                        title="Kubernetes Clusters"
-                        type="cluster"
-                        resources={filteredClusters}
+                        isLoading={isLoading}
                     />
                 )}
               </div>
