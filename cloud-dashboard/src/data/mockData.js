@@ -59,18 +59,245 @@ export const mockClusters = [
   }
 ];
 
-export const generateChartData = (hours) => {
-  const data = [];
-  const now = new Date();
-  
-  for (let i = hours; i >= 0; i--) {
-    const timestamp = new Date(now.getTime() - i * 60 * 60 * 1000);
-    data.push({
-      timestamp: timestamp.toISOString(),
-      cpu: Math.random() * 80 + 10,
-      memory: Math.random() * 70 + 15
-    });
+export const generateChartData = async(timeframe,startTime,endTime,serviceType) => {
+  let data = [];
+
+  console.log(serviceType);
+
+  if(serviceType === 'Bucket-Bytes') {
+  const bucketBytesData = await fetchBucketBytes(timeframe,startTime,endTime);
+  let bbytesData = [];
+  if(bucketBytesData && bucketBytesData.points) {
+  bucketBytesData.points.forEach((bucketData, index) => {
+    bbytesData.push({
+      timestamp: new Date(bucketData.timestamp).toISOString(),
+      component: bucketData.value
+  });
+  });
   }
-  
+  data = bbytesData;
+  }
+  else if(serviceType === 'Bucket-Objects') {
+  const bucketObjectsData = await fetchBucketObjects(timeframe,startTime,endTime);
+  let bObjectsData = [];
+  if(bucketObjectsData && bucketObjectsData.points) {
+  bucketObjectsData.points.forEach((bucketData, index) => {
+    bObjectsData.push({
+      timestamp: new Date(bucketData.timestamp).toISOString(),
+      component: bucketData.value
+  });
+  });
+}
+  data = bObjectsData;
+  }
+  else if(serviceType === 'VM-CPU') {
+  const vmCpuData = await fetchVmCpu(timeframe,startTime,endTime);
+  let cpuData = [];
+  if(vmCpuData && vmCpuData.points) {
+  vmCpuData.points.forEach((cpu, index) => {
+    cpuData.push({
+      timestamp: new Date(cpu.timestamp).toISOString(),
+      component: cpu.value
+  });
+  });
+}
+  data = cpuData;
+  }
+  else if(serviceType === 'VM-Memory') {
+  const vmMemoryData = await fetchVmMemory(timeframe,startTime,endTime);
+  let memData = [];
+  if(vmMemoryData && vmMemoryData.points) {
+  vmMemoryData.points.forEach((mem, index) => {
+    memData.push({
+      timestamp: new Date(mem.timestamp).toISOString(),
+      bucket: mem.value
+  });
+  });
+}
+  data = memData;
+  }
+  else if(serviceType === 'CloudSQL-Connections') {
+  const cloudConData = await fetchCloudConn(timeframe,startTime,endTime);
+  let cloudData = [];
+  if(cloudConData && cloudConData.points) {
+  cloudConData.points.forEach((con, index) => {
+    cloudData.push({
+      timestamp: new Date(con.timestamp).toISOString(),
+      bucket: con.value
+  });
+  });
+}
+  data = cloudData;
+  }
+  else if(serviceType === 'CloudSQL-CPU') {
+  const cloudCpuData = await fetchCloudCpu(timeframe,startTime,endTime);
+  let cpuData = [];
+  if(cloudCpuData && cloudCpuData.points) {
+  cloudCpuData.points.forEach((con, index) => {
+    cpuData.push({
+      timestamp: new Date(con.timestamp).toISOString(),
+      component: con.value
+  });
+  });
+}
+  data = cpuData;
+  }
+    
   return data;
 };
+
+const MONITORING_BASE_URL = 'http://localhost:9000/api/v1';
+
+export const fetchBucketBytes= async (timeframe,startTime,endTime) => {
+  let data = [];
+    try {
+      const response = await fetch(`${MONITORING_BASE_URL}/bucket/bytes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+                timeframe: timeframe,
+                startTime: startTime,
+                endTime: endTime // Default time range, can be adjusted
+              })   
+      });
+
+      if (response.ok) {
+      data = response.json();
+      }
+      return data;
+    } catch (error) {
+     console.log(error);
+    }
+  };
+
+  export const fetchVmCpu= async (timeframe,startTime,endTime) => {
+    try {
+      const response = await fetch(`${MONITORING_BASE_URL}/vm/cpu`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+                timeframe: timeframe,
+                startTime: startTime,
+                endTime: endTime 
+              })   
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching bucket bytes:', error);
+      throw error;
+    }
+  };
+
+  export const fetchBucketObjects= async (timeframe,startTime,endTime) => {
+    try {
+      const response = await fetch(`${MONITORING_BASE_URL}/bucket/objects`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+                timeframe: timeframe,
+                startTime: startTime,
+                endTime: endTime // Default time range, can be adjusted
+              })   
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching bucket bytes:', error);
+      throw error;
+    }
+  };
+
+  export const fetchVmMemory= async (timeframe,startTime,endTime) => {
+    try {
+      const response = await fetch(`${MONITORING_BASE_URL}/vm/memory`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+                timeframe: timeframe,
+                startTime: startTime,
+                endTime: endTime // Default time range, can be adjusted
+              })   
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching bucket bytes:', error);
+      throw error;
+    }
+  };
+
+  export const fetchCloudConn= async (timeframe,startTime,endTime) => {
+    try {
+      const response = await fetch(`${MONITORING_BASE_URL}/cloudsql/connections`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+                timeframe: timeframe,
+                startTime: startTime,
+                endTime: endTime // Default time range, can be adjusted
+              })   
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching bucket bytes:', error);
+      throw error;
+    }
+  };
+
+  export const fetchCloudCpu= async (timeframe,startTime,endTime) => {
+    try {
+      const response = await fetch(`${MONITORING_BASE_URL}/cloudsql/cpu`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+                timeframe: timeframe,
+                startTime: startTime,
+                endTime: endTime // Default time range, can be adjusted
+              })   
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching bucket bytes:', error);
+      throw error;
+    }
+  };

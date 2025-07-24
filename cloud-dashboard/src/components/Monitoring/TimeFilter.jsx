@@ -2,7 +2,15 @@ import React from 'react';
 import { Calendar } from 'lucide-react';
 import { TimeFilters } from '../../types/index.js';
 
-const TimeFilter = ({ selectedFilter, onFilterChange, customRange, onCustomRangeChange }) => {
+const SERVICE_TYPES = ['Bucket-Bytes',
+        'Bucket-Objects',
+        'VM-CPU',
+        'VM-Memory',
+        'CloudSQL-Connections',
+        'CloudSQL-CPU'];
+
+const TimeFilter = ({ selectedFilter, onFilterChange, customRange, onCustomRangeChange,serviceType,
+  onServiceTypeChange }) => {
   const filters = [
     { id: TimeFilters.ONE_HOUR, label: 'Last Hour' },
     { id: TimeFilters.ONE_DAY, label: 'Last Day' },
@@ -23,7 +31,20 @@ const TimeFilter = ({ selectedFilter, onFilterChange, customRange, onCustomRange
   };
 
   return (
+
     <div className="space-y-4">
+      <div className="flex items-center space-x-4">
+    {/* ...existing time filter controls... */}
+    <select
+      value={serviceType}
+      onChange={e => onServiceTypeChange(e.target.value)}
+      className="border rounded px-2 py-1"
+    >
+      {SERVICE_TYPES.map(type => (
+        <option key={type} value={type}>{type}</option>
+      ))}
+    </select>
+  </div>
       <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
         {filters.map((filter) => (
           <button
