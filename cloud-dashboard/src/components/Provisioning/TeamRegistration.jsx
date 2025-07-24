@@ -32,7 +32,7 @@ const TeamRegistrationForm = () => {
 
         const tagRegex = /^[A-Za-z0-9-]{2,10}$/;
         if (!tagRegex.test(formData.tag)) {
-            toast.error('Tag must be 2-10 characters long and contain only uppercase letters, numbers, and hyphens');
+            toast.error('Tag must be 2-10 characters long and contain only lowercase letters, uppercase letters, numbers, and hyphens');
             return false;
         }
 
@@ -55,7 +55,7 @@ const TeamRegistrationForm = () => {
 
         setIsLoading(true);
         try {
-            await registerTeam('red-welder-466202-u6', formData.tag.toLowerCase());
+            await registerTeam(formData.teamName, formData.tag.toLowerCase());
             toast.success('Team registered successfully!');
             resetForm();
         } catch (error) {
