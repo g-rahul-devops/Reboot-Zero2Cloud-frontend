@@ -146,7 +146,7 @@ export const generateChartData = async(timeframe,startTime,endTime,serviceType) 
   return data;
 };
 
-const MONITORING_BASE_URL = 'http://localhost:9000/api/v1';
+const MONITORING_BASE_URL = 'https://zerotocloud-app-91058824520.us-central1.run.app/api/v1';
 
 export const fetchBucketBytes= async (timeframe,startTime,endTime) => {
   let data = [];
